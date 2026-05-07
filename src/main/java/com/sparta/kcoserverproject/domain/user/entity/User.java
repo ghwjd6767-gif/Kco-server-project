@@ -21,4 +21,12 @@ public class User {
     public void chargePoint(Long amount) {
         this.point += amount;
     }
+
+    public void usePoint(Long amount) {
+        if (this.point < amount) {
+            throw new IllegalArgumentException("포인트가 부족합니다.");
+        }
+
+        this.point -= amount;
+    }
 }

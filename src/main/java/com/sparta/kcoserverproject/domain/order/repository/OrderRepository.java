@@ -1,0 +1,7 @@
+package com.sparta.kcoserverproject.domain.order.repository;
+
+import com.sparta.kcoserverproject.domain.order.entity.Order;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface OrderRepository extends JpaRepository<Order, Long> {
+}

@@ -41,4 +41,8 @@ public class PointHistory {
     public static  PointHistory charge(User user, Long amount) {
         return new PointHistory(user, amount, PointHistoryType.CHARGE);
     }
+
+    public static  PointHistory use(User user, Long amount) {
+        return new PointHistory(user, amount, PointHistoryType.USE);
+    }
 }
