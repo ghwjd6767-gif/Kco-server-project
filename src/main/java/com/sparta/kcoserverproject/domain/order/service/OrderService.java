@@ -12,6 +12,8 @@ import com.sparta.kcoserverproject.domain.product.entity.Product;
 import com.sparta.kcoserverproject.domain.product.repository.ProductRepository;
 import com.sparta.kcoserverproject.domain.user.entity.User;
 import com.sparta.kcoserverproject.domain.user.repository.UserRepository;
+import com.sparta.kcoserverproject.global.exception.BusinessException;
+import com.sparta.kcoserverproject.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,10 +33,10 @@ public class OrderService {
 
     public OrderResponseDto order(OrderRequestDto request) {
         User user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         Product product = productRepository.findById(request.productId())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 메뉴입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
         Long totalPrice = calculateTotalPrice(product.getPrice(), request.quantity());
 

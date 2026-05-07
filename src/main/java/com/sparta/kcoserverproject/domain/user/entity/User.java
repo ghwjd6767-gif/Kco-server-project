@@ -1,5 +1,7 @@
 package com.sparta.kcoserverproject.domain.user.entity;
 
+import com.sparta.kcoserverproject.global.exception.BusinessException;
+import com.sparta.kcoserverproject.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -24,7 +26,7 @@ public class User {
 
     public void usePoint(Long amount) {
         if (this.point < amount) {
-            throw new IllegalArgumentException("포인트가 부족합니다.");
+            throw new BusinessException(ErrorCode.INSUFFICIENT_POINT);
         }
 
         this.point -= amount;
