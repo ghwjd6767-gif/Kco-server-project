@@ -43,16 +43,29 @@ public class OrderService {
         String lockKey = "lock:user" + request.userId() + ":point";
         String lockValue = UUID.randomUUID().toString();
 
-        boolean locked = redisLockService.tryLock(lockKey, lockValue, 3);
-
-        if (!locked) {
-            throw new BusinessException(ErrorCode.LOCK_ACQUISITION_FAILED);
-        }
+        boolean locked = false;
 
         try {
-            return orderWithTransaction(request);
+            for (int i = 0; i < 10; i++) {
+                locked = redisLockService.tryLock(lockKey, lockValue, 3);
+
+                if (locked) {
+                    return orderWithTransaction(request);
+                }
+
+                Thread.sleep(100);
+            }
+
+            throw new BusinessException(ErrorCode.LOCK_ACQUISITION_FAILED);
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.LOCK_ACQUISITION_FAILED);
+
         } finally {
-            redisLockService.unlock(lockKey, lockValue);
+            if (locked) {
+                redisLockService.unlock(lockKey, lockValue);
+            }
         }
     }
 
