@@ -14,11 +14,16 @@ import com.sparta.kcoserverproject.domain.user.entity.User;
 import com.sparta.kcoserverproject.domain.user.repository.UserRepository;
 import com.sparta.kcoserverproject.global.exception.BusinessException;
 import com.sparta.kcoserverproject.global.exception.ErrorCode;
+import com.sparta.kcoserverproject.global.lock.service.RedisLockService;
+import com.sparta.kcoserverproject.infrastructure.kafka.event.OrderCompletedEvent;
+import com.sparta.kcoserverproject.infrastructure.kafka.producer.OrderEventProducer;
+import com.sparta.kcoserverproject.infrastructure.redis.repository.RankingRedisRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +35,29 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final PointHistoryRepository pointHistoryRepository;
+    private final RedisLockService redisLockService;
+    private final OrderEventProducer orderEventProducer;
+    private final RankingRedisRepository rankingRedisRepository;
 
     public OrderResponseDto order(OrderRequestDto request) {
+        String lockKey = "lock:user" + request.userId() + ":point";
+        String lockValue = UUID.randomUUID().toString();
+
+        boolean locked = redisLockService.tryLock(lockKey, lockValue, 3);
+
+        if (!locked) {
+            throw new BusinessException(ErrorCode.LOCK_ACQUISITION_FAILED);
+        }
+
+        try {
+            return orderWithTransaction(request);
+        } finally {
+            redisLockService.unlock(lockKey, lockValue);
+        }
+    }
+
+    @Transactional
+    public OrderResponseDto orderWithTransaction(OrderRequestDto request) {
         User user = userRepository.findById(request.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -54,6 +80,16 @@ public class OrderService {
         orderItemRepository.save(orderItem);
 
         pointHistoryRepository.save(PointHistory.use(user, totalPrice));
+
+        rankingRedisRepository.increaseProductScore(product.getId(), request.quantity());
+
+        orderEventProducer.send(new OrderCompletedEvent(
+                order.getId(),
+                user.getId(),
+                product.getId(),
+                request.quantity(),
+                totalPrice
+        ));
 
         return new OrderResponseDto(
                 order.getId(),

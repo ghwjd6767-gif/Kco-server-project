@@ -19,6 +19,6 @@ public class RankingController {
 
     @GetMapping("/popular")
     public ApiResponse<List<PopularProductResponse>> getPopularProducts() {
-        return ApiResponse.success(rankingService.getPopularProducts());
+        return ApiResponse.ok(rankingService.getPopularProducts());
     }
 }
