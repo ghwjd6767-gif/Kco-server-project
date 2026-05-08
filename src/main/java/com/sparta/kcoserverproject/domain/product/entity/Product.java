@@ -2,6 +2,7 @@ package com.sparta.kcoserverproject.domain.product.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -23,7 +24,8 @@ public class Product {
     @Column(nullable = false, precision = 10, scale = 0)
     private BigDecimal price;
 
-    protected Product(String name, BigDecimal price) {
+    @Builder
+    public Product(String name, BigDecimal price) {
         this.name = name;
         this.price = price;
     }
